@@ -46,6 +46,7 @@ sub new {
 
 sub _init {
     my $self = shift;
+    # not used, we need three marks for brief, param and return.
     $self->{mark} = '--!';
 }
 
@@ -64,7 +65,10 @@ sub parse {
     my $block_name = q{};
     my $result = q{};
 
-    my $mark = $self->mark;
+    #my $mark = $self->mark;
+    my $brief_mark = '--%';
+    my $param_mark = '--@';
+    my $return_mark = '--:';
      
     open FH, "<$input"
         or die "Can't open $input for reading: $!";
@@ -77,26 +81,28 @@ sub parse {
             $result .= "\n"
         }
         # skip normal comments
-        next if $line =~ /^\s*--[^!]/;
+        next if $line =~ /^\s*--[^\%\@:]/;
         # remove end of line comments
-        $line =~ s/--[^!].*//;
+        $line =~ s/--[^\%\@:].*//;
         # skip comparison
         next if $line =~ /==/;
         # translate to doxygen mark
-        $line =~ s{$mark}{///};
+        $line =~ s{$brief_mark}{/// \@brief};
+        $line =~ s{$param_mark}{/// \@param};
+        $line =~ s{$return_mark}{/// \@return};
 
         if ($line =~ m{^\s*///}) {
             $result .= "$line\n";
         }
         # function start
-        elsif ($line =~ /^function/) {
+        elsif ($line =~ /^.*function/) {
             $in_function = 1;
             $line .= q{;};
             $line =~ s/:/-/;
             $result .= "$line\n";
         }
-	#local function start
-   	elsif ($line =~ /^local.+function/) {
+        #local function start
+        elsif ($line =~ /^.*local.+function/) {
             $in_function = 1;
             $line .= q{;};
             $line =~ s/function\s+/function-/;
